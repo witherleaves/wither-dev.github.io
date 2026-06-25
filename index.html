@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>wither'API - 私有大模型 API 中转分发网关</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23020617'/%3E%3Ccircle cx='32' cy='32' r='18' fill='none' stroke='%238b5cf6' stroke-width='5'/%3E%3Cpath d='M18 34c8-10 20-10 28 0M32 14v36M16 32h32' stroke='%2322d3ee' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -33,24 +34,40 @@
   </script>
 
   <style>
-    html, body {
-      min-height: 100%;
-    }
+    html, body { min-height: 100%; }
     body {
       background:
-        radial-gradient(circle at 20% 0%, rgba(124,58,237,.15), transparent 28%),
-        radial-gradient(circle at 80% 10%, rgba(34,211,238,.10), transparent 26%),
+        radial-gradient(circle at 18% 0%, rgba(124, 58, 237, .14), transparent 26%),
+        radial-gradient(circle at 82% 10%, rgba(34, 211, 238, .12), transparent 28%),
         #020617;
     }
     .glass-card {
       background: rgba(15, 23, 42, 0.58);
       backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
     }
     .grid-mask {
       background-image:
         linear-gradient(to right, rgba(15, 23, 42, 0.85) 1px, transparent 1px),
         linear-gradient(to bottom, rgba(15, 23, 42, 0.85) 1px, transparent 1px);
       background-size: 4rem 4rem;
+    }
+    #globe-stage {
+      touch-action: none;
+      min-height: 480px;
+    }
+    #globe-stage canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+    .continent-pill[aria-pressed="true"] {
+      border-color: rgba(34, 211, 238, .65);
+      color: #e0f2fe;
+      background: rgba(8, 47, 73, .58);
+    }
+    @media (max-width: 640px) {
+      #globe-stage { min-height: 380px; }
     }
   </style>
 </head>
@@ -61,7 +78,7 @@
     <div class="absolute top-10 right-1/4 w-[420px] h-[420px] rounded-full bg-cyan-500/10 blur-[110px]"></div>
   </div>
 
-  <header class="relative z-40 border-b border-slate-900 bg-slate-950/70 backdrop-blur-md">
+  <header class="relative z-40 mt-10 sm:mt-16 border-b border-slate-900 bg-slate-950/70 backdrop-blur-md">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
       <a href="https://api2.202207948.xyz/" class="flex items-center gap-3 group">
         <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-violet-500 flex items-center justify-center text-white shadow-lg shadow-brand-500/20 group-hover:scale-105 transition-transform">
@@ -88,7 +105,7 @@
         <span class="hidden sm:inline-flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/25 select-none">
           <i class="fa-solid fa-user-slash"></i> 注册已关闭
         </span>
-        <button onclick="toggleMobileMenu()" class="lg:hidden text-slate-400 hover:text-white p-2">
+        <button onclick="toggleMobileMenu()" class="lg:hidden text-slate-400 hover:text-white p-2" aria-label="打开移动菜单">
           <i class="fa-solid fa-bars text-xl" id="mobile-menu-icon"></i>
         </button>
       </div>
@@ -104,23 +121,53 @@
   </header>
 
   <main class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-    <section class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-      <!-- 左侧地球 -->
-      <div class="lg:col-span-5 relative overflow-hidden rounded-[2rem] border border-slate-900 bg-slate-950/40 min-h-[420px] sm:min-h-[560px] flex items-center justify-center">
-        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(124,58,237,0.12),transparent_55%)] pointer-events-none"></div>
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch mb-16">
+      <div class="lg:col-span-5 relative overflow-hidden rounded-[1.5rem] border border-slate-900 bg-slate-950/50 min-h-[560px] flex flex-col">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(34,211,238,0.10),transparent_58%)] pointer-events-none"></div>
         <div class="absolute inset-0 grid-mask opacity-20 pointer-events-none"></div>
-        <div class="absolute w-[22rem] h-[22rem] rounded-full border border-brand-500/10 pointer-events-none"></div>
-        <div class="absolute w-[28rem] h-[28rem] rounded-full border border-cyan-500/10 pointer-events-none"></div>
-        <canvas
-          id="globe-canvas"
-          class="relative z-10 w-[320px] h-[320px] sm:w-[460px] sm:h-[460px] max-w-full touch-none cursor-grab active:cursor-grabbing"
-          width="920"
-          height="920"
-        ></canvas>
+
+        <div class="relative z-10 p-4 sm:p-5 flex items-center justify-between gap-3">
+          <div>
+            <p class="text-[10px] uppercase tracking-[0.25em] text-cyan-300/70 font-bold">Global Network</p>
+            <h2 class="mt-1 text-base font-bold text-white">全球节点视图</h2>
+          </div>
+          <button id="reset-globe-btn" class="hidden shrink-0 rounded-xl border border-slate-700 bg-slate-950/75 px-3 py-2 text-xs font-semibold text-slate-200 hover:border-cyan-400 hover:text-white transition">
+            <i class="fa-solid fa-rotate-left mr-1.5"></i>返回全球
+          </button>
+        </div>
+
+        <div id="globe-stage" class="relative z-10 flex-1 cursor-grab active:cursor-grabbing" aria-label="可交互 3D 地球">
+          <div id="globe-fallback" class="absolute inset-0 hidden items-center justify-center px-6 text-center text-sm text-slate-400">
+            3D 地球加载失败，请检查浏览器 WebGL 支持或 CDN 网络连接。
+          </div>
+        </div>
+
+        <div class="relative z-10 p-4 sm:p-5 border-t border-slate-900 bg-slate-950/55">
+          <div class="flex flex-wrap gap-2" id="continent-buttons" aria-label="大陆快捷选择"></div>
+          <div id="continent-panel" class="mt-4 rounded-2xl border border-slate-800 bg-slate-950/75 p-4">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-[10px] uppercase tracking-[0.24em] text-slate-500 font-bold">Selected Region</p>
+                <h3 id="continent-title" class="mt-1 text-lg font-bold text-white">全球网络</h3>
+              </div>
+              <span id="continent-status" class="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold text-emerald-300">自动旋转</span>
+            </div>
+            <p id="continent-desc" class="mt-3 text-xs leading-relaxed text-slate-400">点击地球上的大陆，视角会放大到对应半球，并展示主要城市之间的可视化链路。</p>
+            <div class="mt-4 grid grid-cols-1 gap-3">
+              <div>
+                <p class="mb-2 text-[10px] uppercase tracking-[0.22em] text-slate-500 font-bold">城市节点</p>
+                <div id="city-list" class="flex flex-wrap gap-2 text-xs text-slate-300"></div>
+              </div>
+              <div>
+                <p class="mb-2 text-[10px] uppercase tracking-[0.22em] text-slate-500 font-bold">主要链路</p>
+                <div id="route-list" class="space-y-1.5 text-xs text-slate-400"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- 右侧介绍 -->
-      <div class="lg:col-span-7 glass-card relative overflow-hidden rounded-[2rem] border border-slate-900 p-6 sm:p-8">
+      <div class="lg:col-span-7 glass-card relative overflow-hidden rounded-[1.5rem] border border-slate-900 p-6 sm:p-8">
         <div class="absolute inset-0 grid-mask opacity-25 pointer-events-none"></div>
         <div class="relative z-10 space-y-6">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -130,7 +177,7 @@
               </div>
               <div>
                 <h1 class="text-lg font-bold text-white tracking-wide">wither'API 私有网关</h1>
-                <span class="block text-[10px] text-slate-500 font-mono tracking-[0.25em]">SECURE ISOLATED NODE</span>
+                <span class="block text-[10px] text-slate-500 font-mono tracking-wider">SECURE ISOLATED NODE</span>
               </div>
             </div>
 
@@ -141,34 +188,35 @@
               </span>
               <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20">
                 <i class="fa-solid fa-user-slash"></i>
-                不开放注册
+                注册已关闭
               </span>
             </div>
           </div>
 
-          <div class="bg-slate-950/75 border border-slate-800 rounded-2xl p-5 space-y-3.5 text-sm text-slate-300 leading-relaxed shadow-inner">
-            <p class="font-semibold text-white flex items-center gap-2">
-              <i class="fa-solid fa-circle-info text-brand-400"></i> 关于本站
+          <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-5 space-y-3.5 text-xs sm:text-sm text-slate-300 leading-relaxed shadow-inner">
+            <div class="flex items-center gap-2 text-brand-400 font-bold">
+              <i class="fa-solid fa-lock text-sm"></i>
+              <span>私有网关 · 不开放对外注册</span>
+            </div>
+            <p>
+              本服务为作者个人效率开发、科研项目调试搭建的 <strong class="text-white font-semibold">私有化大模型 API 分发专线</strong>。
             </p>
             <p>
-              本站是作者个人使用的私有大模型 API 中转网关，主要用于开发调试、学术研究与日常工具接入。
+              为了提供稳定调用并发与独享带宽，本站 <strong class="text-red-400 font-semibold">不提供公开注册入口</strong>，也不对外进行商业推广。
             </p>
             <p>
-              当前站点只提供受邀登录入口，<strong class="text-white">不开放公开注册</strong>，也不面向外部用户提供通用账户申请。
-            </p>
-            <p>
-              如果你已经有权限，直接登录即可进入控制台；否则可先查看定价与接入说明。
+              非受邀用户无法直接使用底层接口。已有测试授权的内部成员可通过下方按钮进入控制台。
             </p>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="bg-slate-900/55 border border-slate-800 p-4 rounded-xl">
+            <div class="bg-slate-900/50 border border-slate-800 p-4 rounded-xl">
               <span class="text-[9px] uppercase tracking-wider text-slate-500 block font-bold">API Base URL</span>
               <code class="text-xs font-mono text-brand-400 select-all block mt-1" id="api-base-url">https://api2.202207948.xyz</code>
             </div>
-            <div class="bg-slate-900/55 border border-slate-800 p-4 rounded-xl flex items-center justify-between gap-3">
+            <div class="bg-slate-900/50 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
               <div>
-                <span class="text-[9px] uppercase tracking-wider text-slate-500 block font-bold">实时延迟</span>
+                <span class="text-[9px] uppercase tracking-wider text-slate-500 block font-bold">平均网关延迟</span>
                 <span class="text-xs font-mono font-semibold text-white mt-1 block" id="latency-val">124 ms</span>
               </div>
               <button onclick="copyBaseURL()" class="bg-slate-950 hover:bg-slate-800 border border-slate-800 text-xs font-semibold py-2 px-3.5 rounded-xl text-slate-200 transition shrink-0 flex items-center gap-1.5">
@@ -177,15 +225,13 @@
             </div>
           </div>
 
-          <div>
-            <a href="https://api2.202207948.xyz/login" class="w-full bg-gradient-to-r from-brand-600 to-violet-600 hover:from-brand-500 hover:to-violet-500 text-white font-bold py-3.5 px-8 rounded-2xl shadow-lg shadow-brand-500/20 transition flex items-center justify-center gap-2">
-              进入受邀登录页 <i class="fa-solid fa-arrow-right-to-bracket text-sm"></i>
-            </a>
-          </div>
+          <a href="https://api2.202207948.xyz/login" class="w-full bg-gradient-to-r from-brand-600 to-violet-600 hover:from-brand-500 hover:to-violet-500 text-white font-bold py-3.5 px-8 rounded-2xl shadow-lg shadow-brand-500/20 transition flex items-center justify-center gap-2">
+            进入控制台登录页 <i class="fa-solid fa-arrow-right-to-bracket text-sm"></i>
+          </a>
         </div>
 
         <div class="relative z-10 mt-6 pt-6 border-t border-slate-900">
-          <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider block mb-3.5">控制台直达</span>
+          <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider block mb-3.5">控制台核心入口</span>
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <a href="https://api2.202207948.xyz/console/token" class="bg-slate-950/65 border border-slate-800 hover:border-brand-500/50 p-3 rounded-xl transition flex items-center gap-2 group">
               <i class="fa-solid fa-key text-brand-400 group-hover:scale-105 transition-transform text-xs"></i>
@@ -223,7 +269,7 @@
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div class="bg-slate-900/40 border border-slate-900 rounded-2xl p-6 hover:border-brand-500/30 hover:bg-slate-900/60 transition flex flex-col justify-between group">
+        <article class="bg-slate-900/40 border border-slate-900 rounded-2xl p-6 hover:border-brand-500/30 hover:bg-slate-900/60 transition flex flex-col justify-between group">
           <div>
             <div class="w-11 h-11 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center text-lg mb-6 group-hover:scale-105 transition-transform">
               <i class="fa-solid fa-key"></i>
@@ -232,20 +278,20 @@
             <p class="text-xs text-slate-400 leading-relaxed mb-6">生成和管理 API Keys，支持不同项目使用不同凭证。</p>
           </div>
           <a href="https://api2.202207948.xyz/console/token" class="w-full text-center bg-slate-950 hover:bg-brand-600 border border-slate-800 hover:border-brand-500 text-xs font-semibold py-2.5 px-4 rounded-xl text-slate-200 hover:text-white transition">管理 API 密钥</a>
-        </div>
+        </article>
 
-        <div class="bg-slate-900/40 border border-slate-900 rounded-2xl p-6 hover:border-brand-500/30 hover:bg-slate-900/60 transition flex flex-col justify-between group">
+        <article class="bg-slate-900/40 border border-slate-900 rounded-2xl p-6 hover:border-brand-500/30 hover:bg-slate-900/60 transition flex flex-col justify-between group">
           <div>
             <div class="w-11 h-11 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-lg mb-6 group-hover:scale-105 transition-transform">
               <i class="fa-solid fa-wallet"></i>
             </div>
             <h3 class="text-base font-bold text-white mb-2">额度充值 (Top-up)</h3>
-            <p class="text-xs text-slate-400 leading-relaxed mb-6">支持兑换码和充值流程，适合个人自用补充额度。</p>
+            <p class="text-xs text-slate-400 leading-relaxed mb-6">支持兑换码和余额补充流程，适合个人自用补充额度。</p>
           </div>
           <a href="https://api2.202207948.xyz/console/topup" class="w-full text-center bg-slate-950 hover:bg-emerald-600 border border-slate-800 hover:border-emerald-500 text-xs font-semibold py-2.5 px-4 rounded-xl text-slate-200 hover:text-white transition">进入充值中心</a>
-        </div>
+        </article>
 
-        <div class="bg-slate-900/40 border border-slate-900 rounded-2xl p-6 hover:border-brand-500/30 hover:bg-slate-900/60 transition flex flex-col justify-between group">
+        <article class="bg-slate-900/40 border border-slate-900 rounded-2xl p-6 hover:border-brand-500/30 hover:bg-slate-900/60 transition flex flex-col justify-between group">
           <div>
             <div class="w-11 h-11 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-lg mb-6 group-hover:scale-105 transition-transform">
               <i class="fa-solid fa-tags"></i>
@@ -254,89 +300,75 @@
             <p class="text-xs text-slate-400 leading-relaxed mb-6">查看模型费率、输入输出倍率和相关计费标准。</p>
           </div>
           <a href="https://api2.202207948.xyz/pricing" class="w-full text-center bg-slate-950 hover:bg-cyan-600 border border-slate-800 hover:border-cyan-500 text-xs font-semibold py-2.5 px-4 rounded-xl text-slate-200 hover:text-white transition">查看计费标准</a>
-        </div>
+        </article>
 
-        <div class="bg-slate-900/40 border border-slate-900 rounded-2xl p-6 hover:border-brand-500/30 hover:bg-slate-900/60 transition flex flex-col justify-between group">
+        <article class="bg-slate-900/40 border border-slate-900 rounded-2xl p-6 hover:border-brand-500/30 hover:bg-slate-900/60 transition flex flex-col justify-between group">
           <div>
             <div class="w-11 h-11 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-lg mb-6 group-hover:scale-105 transition-transform">
               <i class="fa-solid fa-chart-line"></i>
             </div>
             <h3 class="text-base font-bold text-white mb-2">调用日志 (Logs)</h3>
-            <p class="text-xs text-slate-400 leading-relaxed mb-6">追踪请求、耗时、消耗与状态，方便个人排查问题。</p>
+            <p class="text-xs text-slate-400 leading-relaxed mb-6">查看请求状态、消耗、响应时间和错误信息。</p>
           </div>
           <a href="https://api2.202207948.xyz/console/log" class="w-full text-center bg-slate-950 hover:bg-indigo-600 border border-slate-800 hover:border-indigo-500 text-xs font-semibold py-2.5 px-4 rounded-xl text-slate-200 hover:text-white transition">查看实时日志</a>
-        </div>
+        </article>
 
-        <div class="bg-slate-900/40 border border-slate-900 rounded-2xl p-6 hover:border-brand-500/30 hover:bg-slate-900/60 transition flex flex-col justify-between group">
+        <article class="bg-slate-900/40 border border-slate-900 rounded-2xl p-6 hover:border-brand-500/30 hover:bg-slate-900/60 transition flex flex-col justify-between group">
           <div>
             <div class="w-11 h-11 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-lg mb-6 group-hover:scale-105 transition-transform">
               <i class="fa-solid fa-terminal"></i>
             </div>
             <h3 class="text-base font-bold text-white mb-2">沙盒测试 (Playground)</h3>
-            <p class="text-xs text-slate-400 leading-relaxed mb-6">直接在浏览器中试用模型输出，便于快速验证效果。</p>
+            <p class="text-xs text-slate-400 leading-relaxed mb-6">用可视化界面快速测试模型调用和提示词效果。</p>
           </div>
           <a href="https://api2.202207948.xyz/console/playground" class="w-full text-center bg-slate-950 hover:bg-amber-600 border border-slate-800 hover:border-amber-500 text-xs font-semibold py-2.5 px-4 rounded-xl text-slate-200 hover:text-white transition">启动测试沙盒</a>
-        </div>
+        </article>
 
-        <div class="bg-slate-900/40 border border-slate-900 rounded-2xl p-6 hover:border-brand-500/30 hover:bg-slate-900/60 transition flex flex-col justify-between group">
+        <article class="bg-slate-900/40 border border-slate-900 rounded-2xl p-6 hover:border-brand-500/30 hover:bg-slate-900/60 transition flex flex-col justify-between group">
           <div>
-            <div class="w-11 h-11 rounded-xl bg-slate-800 text-slate-300 flex items-center justify-center text-lg mb-6 group-hover:scale-105 transition-transform">
-              <i class="fa-regular fa-user"></i>
+            <div class="w-11 h-11 rounded-xl bg-slate-500/10 text-slate-300 flex items-center justify-center text-lg mb-6 group-hover:scale-105 transition-transform">
+              <i class="fa-solid fa-user-gear"></i>
             </div>
-            <h3 class="text-base font-bold text-white mb-2">个人中心 (Profile)</h3>
-            <p class="text-xs text-slate-400 leading-relaxed mb-6">管理个人信息和登录信息，适合单人自用。</p>
+            <h3 class="text-base font-bold text-white mb-2">个人设置 (Profile)</h3>
+            <p class="text-xs text-slate-400 leading-relaxed mb-6">管理账户基础信息、访问偏好与安全设置。</p>
           </div>
           <a href="https://api2.202207948.xyz/console/profile" class="w-full text-center bg-slate-950 hover:bg-slate-800 border border-slate-800 text-xs font-semibold py-2.5 px-4 rounded-xl text-slate-200 hover:text-white transition">前往个人设置</a>
-        </div>
+        </article>
       </div>
     </section>
 
     <section class="py-16 border-t border-slate-900">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-        <div>
-          <h2 class="text-2xl sm:text-3xl font-bold text-white mb-6">三步在本地工具中接入</h2>
-          <p class="text-xs sm:text-sm text-slate-400 mb-8 leading-relaxed">
-            兼容标准 OpenAI SDK 与接口格式，适合 NextChat、Cherry Studio、LobeChat、Cursor、VSCode 等客户端。
-          </p>
-
-          <div class="space-y-6">
-            <div class="flex gap-4">
-              <div class="w-8 h-8 rounded-full bg-brand-500/10 text-brand-400 flex items-center justify-center font-bold text-xs shrink-0">1</div>
-              <div>
-                <h4 class="text-xs sm:text-sm font-semibold text-white">创建 API Token</h4>
-                <p class="text-[11px] text-slate-400 mt-1">在 <a href="https://api2.202207948.xyz/console/token" class="text-brand-400 hover:underline">令牌页面</a> 生成专属于你的自用 Key。</p>
-              </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-slate-900/40 border border-slate-900 rounded-2xl p-6">
+          <h2 class="text-lg font-bold text-white mb-5">快速接入</h2>
+          <div class="space-y-4">
+            <div class="flex gap-3">
+              <span class="w-7 h-7 rounded-lg bg-brand-500/10 text-brand-300 flex items-center justify-center text-xs font-bold shrink-0">1</span>
+              <p class="text-sm text-slate-300">在 <a href="https://api2.202207948.xyz/console/token" class="text-brand-400 hover:underline">令牌页面</a> 生成专属于你的自用 Key。</p>
             </div>
-            <div class="flex gap-4">
-              <div class="w-8 h-8 rounded-full bg-brand-500/10 text-brand-400 flex items-center justify-center font-bold text-xs shrink-0">2</div>
-              <div>
-                <h4 class="text-xs sm:text-sm font-semibold text-white">修改 Base URL</h4>
-                <p class="text-[11px] text-slate-400 mt-1">将客户端端点设置为 <code>https://api2.202207948.xyz/v1</code>。</p>
-              </div>
+            <div class="flex gap-3">
+              <span class="w-7 h-7 rounded-lg bg-brand-500/10 text-brand-300 flex items-center justify-center text-xs font-bold shrink-0">2</span>
+              <p class="text-sm text-slate-300">将客户端端点设置为 <code class="text-cyan-300">https://api2.202207948.xyz/v1</code>。</p>
             </div>
-            <div class="flex gap-4">
-              <div class="w-8 h-8 rounded-full bg-brand-500/10 text-brand-400 flex items-center justify-center font-bold text-xs shrink-0">3</div>
-              <div>
-                <h4 class="text-xs sm:text-sm font-semibold text-white">开始对话测试</h4>
-                <p class="text-[11px] text-slate-400 mt-1">选择模型并发起请求即可直接使用。</p>
-              </div>
+            <div class="flex gap-3">
+              <span class="w-7 h-7 rounded-lg bg-brand-500/10 text-brand-300 flex items-center justify-center text-xs font-bold shrink-0">3</span>
+              <p class="text-sm text-slate-300">使用 OpenAI 兼容 SDK 发起请求，并在日志页追踪消耗。</p>
             </div>
           </div>
         </div>
 
-        <div class="bg-slate-900/70 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
-          <div class="flex items-center justify-between border-b border-slate-800 bg-slate-950/60 px-4 py-3">
-            <div class="flex gap-1">
+        <div class="bg-slate-950/70 border border-slate-900 rounded-2xl overflow-hidden">
+          <div class="px-4 py-3 border-b border-slate-900 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
               <button id="tab-btn-python" onclick="switchLangTab('python')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-brand-600/10 text-brand-400 border border-brand-500/20 transition-all">Python</button>
               <button id="tab-btn-javascript" onclick="switchLangTab('javascript')" class="px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition-all">JavaScript</button>
               <button id="tab-btn-curl" onclick="switchLangTab('curl')" class="px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition-all">cURL</button>
             </div>
-            <button onclick="copyActiveCode()" class="text-slate-400 hover:text-white text-xs font-medium flex items-center gap-1.5 transition">
-              <i class="fa-regular fa-copy"></i> 复制本段代码
+            <button onclick="copyActiveCode()" class="text-xs text-slate-400 hover:text-white transition flex items-center gap-1.5">
+              <i class="fa-regular fa-copy"></i> 复制
             </button>
           </div>
-
-          <div class="p-6 font-mono text-xs overflow-x-auto text-left min-h-[240px]">
+          <div class="p-4 overflow-x-auto text-xs font-mono">
             <pre id="code-block-python" class="text-slate-300 leading-relaxed">from openai import OpenAI
 
 client = OpenAI(
@@ -344,33 +376,31 @@ client = OpenAI(
     base_url="https://api2.202207948.xyz/v1"
 )
 
-completion = client.chat.completions.create(
-    model="gpt-4o",
-    messages=[{"role": "user", "content": "Hello!"}]
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": "Hello wither'API"}]
 )
 
-print(completion.choices[0].message.content)</pre>
-
+print(response.choices[0].message.content)</pre>
             <pre id="code-block-javascript" class="hidden text-slate-300 leading-relaxed">import OpenAI from "openai";
 
-const openai = new OpenAI({
-    apiKey: "sk-wither-202207948xyz...",
-    baseURL: "https://api2.202207948.xyz/v1"
+const client = new OpenAI({
+  apiKey: "sk-wither-202207948xyz...",
+  baseURL: "https://api2.202207948.xyz/v1"
 });
 
-const completion = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [{ role: "user", content: "Hello!" }]
+const response = await client.chat.completions.create({
+  model: "gpt-4o-mini",
+  messages: [{ role: "user", content: "Hello wither'API" }]
 });
 
-console.log(completion.choices[0].message.content);</pre>
-
+console.log(response.choices[0].message.content);</pre>
             <pre id="code-block-curl" class="hidden text-slate-300 leading-relaxed">curl https://api2.202207948.xyz/v1/chat/completions \
   -H "Authorization: Bearer sk-wither-202207948xyz..." \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "gpt-4o",
-    "messages": [{"role": "user", "content": "Hello!"}]
+    "model": "gpt-4o-mini",
+    "messages": [{"role": "user", "content": "Hello witherAPI"}]
   }'</pre>
           </div>
         </div>
@@ -378,7 +408,7 @@ console.log(completion.choices[0].message.content);</pre>
     </section>
   </main>
 
-  <footer class="relative z-10 bg-slate-950 border-t border-slate-900 py-12">
+  <footer class="bg-slate-950 border-t border-slate-900 py-12 relative z-10">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-slate-500">
         <div class="flex items-center gap-3">
@@ -387,20 +417,16 @@ console.log(completion.choices[0].message.content);</pre>
           </div>
           <div>
             <span class="font-bold text-slate-400">wither'API 分发网关</span>
-            <span class="block text-[10px] text-slate-600 mt-0.5">本站仅用于个人自用，不对外开放公共注册。</span>
+            <span class="block text-[10px] text-slate-600 mt-0.5">本服务仅面向个人学术研究及开发自用，不开放公共注册。</span>
           </div>
         </div>
-
         <div class="text-center sm:text-right max-w-md">
           <span class="text-brand-400 font-semibold flex items-center justify-center sm:justify-end gap-1.5 mb-1">
-            <i class="fa-solid fa-circle-check"></i> 智能路由已就绪
+            <i class="fa-solid fa-shield-halved"></i> 独立安全防护网关已就绪
           </span>
-          <p class="text-[10px] text-slate-600 leading-normal">
-            个人自用的高性能中转网关，提供稳定接入与控制台管理。
-          </p>
+          <p class="text-[10px] text-slate-600 leading-normal">自主分发架构，面向并发隔离和多模型高响应稳定性。</p>
         </div>
       </div>
-
       <div class="mt-8 pt-8 border-t border-slate-900/60 text-center text-[10px] text-slate-600">
         © 2026 wither'API. Domain: <a href="https://api2.202207948.xyz/" class="hover:underline text-slate-500">api2.202207948.xyz</a>. All Rights Reserved.
       </div>
@@ -421,13 +447,10 @@ console.log(completion.choices[0].message.content);</pre>
       const toast = document.getElementById('toast');
       const toastMessage = document.getElementById('toast-message');
       const toastIcon = document.getElementById('toast-icon');
-
       toastIcon.className = iconClass;
       toastMessage.innerText = message;
-
       toast.classList.remove('translate-y-20', 'opacity-0');
       toast.classList.add('translate-y-0', 'opacity-100');
-
       clearTimeout(toastTimeout);
       toastTimeout = setTimeout(() => {
         toast.classList.remove('translate-y-0', 'opacity-100');
@@ -473,12 +496,11 @@ console.log(completion.choices[0].message.content);</pre>
     }
 
     function copyActiveCode() {
-      const block = document.getElementById(`code-block-${currentLang}`);
-      const textToCopy = block.innerText.trim();
+      const textToCopy = document.getElementById(`code-block-${currentLang}`).innerText.trim();
       navigator.clipboard.writeText(textToCopy).then(() => {
-        showToast("示例代码已复制", "fa-solid fa-circle-check text-emerald-400");
+        showToast("示例代码已成功复制", "fa-solid fa-circle-check text-emerald-400");
       }).catch(() => {
-        showToast("复制失败，请手动复制", "fa-solid fa-circle-exclamation text-amber-500");
+        showToast("复制失败，请手动复制代码", "fa-solid fa-circle-exclamation text-amber-500");
       });
     }
 
@@ -490,441 +512,795 @@ console.log(completion.choices[0].message.content);</pre>
       }
     }, 3000);
 
-    // ============================
-    // 世界地图地球 Canvas
-    // ============================
-    const globeCanvas = document.getElementById('globe-canvas');
-    const gctx = globeCanvas.getContext('2d');
+    window.showToast = showToast;
+  </script>
 
-    // 2D 世界地图掩膜
-    const mapCanvas = document.createElement('canvas');
-    mapCanvas.width = 360;
-    mapCanvas.height = 180;
-    const mctx = mapCanvas.getContext('2d');
+  <script>
+    window.__globeLoaded = false;
+    window.setTimeout(() => {
+      if (!window.__globeLoaded) {
+        const fallback = document.getElementById('globe-fallback');
+        if (fallback) fallback.classList.remove('hidden');
+        if (fallback) fallback.classList.add('flex');
+      }
+    }, 4500);
+  </script>
 
-    function lonLatToMaskXY(lon, lat) {
-      return [lon + 180, 90 - lat];
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/controls/OrbitControls.js';
+
+    const stage = document.getElementById('globe-stage');
+    const fallback = document.getElementById('globe-fallback');
+    const resetButton = document.getElementById('reset-globe-btn');
+    const continentButtons = document.getElementById('continent-buttons');
+    const continentTitle = document.getElementById('continent-title');
+    const continentDesc = document.getElementById('continent-desc');
+    const continentStatus = document.getElementById('continent-status');
+    const cityList = document.getElementById('city-list');
+    const routeList = document.getElementById('route-list');
+
+    const RADIUS = 2.45;
+    const CONTINENTS = {
+      asia: {
+        name: '亚洲',
+        desc: '面向东亚、东南亚和南亚的高频访问区，适合低延迟模型调用与开发调试。',
+        center: { lat: 34, lng: 104 },
+        distance: 4.7,
+        boxes: [{ latMin: -10, latMax: 78, lngMin: 25, lngMax: 180 }],
+        cities: [
+          { name: '北京', lat: 39.9042, lng: 116.4074 },
+          { name: '上海', lat: 31.2304, lng: 121.4737 },
+          { name: '东京', lat: 35.6762, lng: 139.6503 },
+          { name: '新加坡', lat: 1.3521, lng: 103.8198 }
+        ],
+        routes: [['北京', '上海'], ['上海', '东京'], ['上海', '新加坡'], ['北京', '东京']]
+      },
+      europe: {
+        name: '欧洲',
+        desc: '覆盖西欧与中欧主要城市，适合作为跨区域模型服务与控制台访问的中继视图。',
+        center: { lat: 50, lng: 12 },
+        distance: 4.5,
+        boxes: [{ latMin: 35, latMax: 72, lngMin: -12, lngMax: 45 }],
+        cities: [
+          { name: '伦敦', lat: 51.5072, lng: -0.1276 },
+          { name: '巴黎', lat: 48.8566, lng: 2.3522 },
+          { name: '法兰克福', lat: 50.1109, lng: 8.6821 },
+          { name: '阿姆斯特丹', lat: 52.3676, lng: 4.9041 }
+        ],
+        routes: [['伦敦', '巴黎'], ['巴黎', '法兰克福'], ['法兰克福', '阿姆斯特丹'], ['伦敦', '阿姆斯特丹']]
+      },
+      northAmerica: {
+        name: '北美洲',
+        desc: '面向美国东西海岸的主干访问区，用于展示跨城调用、监控与边缘接入链路。',
+        center: { lat: 39, lng: -98 },
+        distance: 4.8,
+        boxes: [{ latMin: 15, latMax: 72, lngMin: -170, lngMax: -50 }],
+        cities: [
+          { name: '纽约', lat: 40.7128, lng: -74.0060 },
+          { name: '旧金山', lat: 37.7749, lng: -122.4194 },
+          { name: '洛杉矶', lat: 34.0522, lng: -118.2437 },
+          { name: '多伦多', lat: 43.6532, lng: -79.3832 }
+        ],
+        routes: [['纽约', '多伦多'], ['纽约', '旧金山'], ['旧金山', '洛杉矶'], ['洛杉矶', '纽约']]
+      },
+      southAmerica: {
+        name: '南美洲',
+        desc: '展示南美主要城市之间的区域链路，适合观察远距离跨洋访问路径。',
+        center: { lat: -18, lng: -60 },
+        distance: 4.8,
+        boxes: [{ latMin: -56, latMax: 13, lngMin: -82, lngMax: -34 }],
+        cities: [
+          { name: '圣保罗', lat: -23.5505, lng: -46.6333 },
+          { name: '布宜诺斯艾利斯', lat: -34.6037, lng: -58.3816 },
+          { name: '利马', lat: -12.0464, lng: -77.0428 },
+          { name: '圣地亚哥', lat: -33.4489, lng: -70.6693 }
+        ],
+        routes: [['圣保罗', '布宜诺斯艾利斯'], ['利马', '圣地亚哥'], ['圣地亚哥', '布宜诺斯艾利斯'], ['利马', '圣保罗']]
+      },
+      africa: {
+        name: '非洲',
+        desc: '覆盖北非与南非示例节点，展示大陆内部和南北向骨干链路。',
+        center: { lat: 3, lng: 20 },
+        distance: 4.8,
+        boxes: [{ latMin: -35, latMax: 37, lngMin: -18, lngMax: 52 }],
+        cities: [
+          { name: '开罗', lat: 30.0444, lng: 31.2357 },
+          { name: '拉各斯', lat: 6.5244, lng: 3.3792 },
+          { name: '内罗毕', lat: -1.2921, lng: 36.8219 },
+          { name: '约翰内斯堡', lat: -26.2041, lng: 28.0473 }
+        ],
+        routes: [['开罗', '拉各斯'], ['开罗', '内罗毕'], ['内罗毕', '约翰内斯堡'], ['拉各斯', '约翰内斯堡']]
+      },
+      oceania: {
+        name: '大洋洲',
+        desc: '展示澳新区域节点，适合表达小范围但远距离的网络服务覆盖。',
+        center: { lat: -25, lng: 135 },
+        distance: 4.5,
+        boxes: [{ latMin: -48, latMax: -5, lngMin: 110, lngMax: 180 }],
+        cities: [
+          { name: '悉尼', lat: -33.8688, lng: 151.2093 },
+          { name: '墨尔本', lat: -37.8136, lng: 144.9631 },
+          { name: '布里斯班', lat: -27.4698, lng: 153.0251 },
+          { name: '奥克兰', lat: -36.8509, lng: 174.7645 }
+        ],
+        routes: [['悉尼', '墨尔本'], ['悉尼', '布里斯班'], ['悉尼', '奥克兰'], ['墨尔本', '奥克兰']]
+      }
+    };
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    stage.appendChild(renderer.domElement);
+    fallback.classList.add('hidden');
+    fallback.classList.remove('flex');
+    window.__globeLoaded = true;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+    camera.position.set(0, 0.25, 7.2);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.enablePan = false;
+    controls.minDistance = 3.6;
+    controls.maxDistance = 8.8;
+    controls.rotateSpeed = 0.55;
+
+    const root = new THREE.Group();
+    scene.add(root);
+
+    const textureLoader = new THREE.TextureLoader();
+    const earthMap = textureLoader.load(
+      'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
+      undefined,
+      undefined,
+      () => buildProceduralEarth()
+    );
+    earthMap.colorSpace = THREE.SRGBColorSpace;
+
+    const earthMaterial = new THREE.MeshPhongMaterial({
+      map: earthMap,
+      color: 0xb9d7ff,
+      shininess: 18,
+      specular: new THREE.Color(0x19365f),
+      emissive: new THREE.Color(0x071225),
+      emissiveIntensity: 0.22
+    });
+    const earth = new THREE.Mesh(new THREE.SphereGeometry(RADIUS, 96, 96), earthMaterial);
+    root.add(earth);
+
+    const atmosphere = new THREE.Mesh(
+      new THREE.SphereGeometry(RADIUS * 1.035, 96, 96),
+      new THREE.MeshBasicMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.12,
+        blending: THREE.AdditiveBlending,
+        side: THREE.BackSide
+      })
+    );
+    root.add(atmosphere);
+
+    const glow = new THREE.Mesh(
+      new THREE.SphereGeometry(RADIUS * 1.08, 96, 96),
+      new THREE.MeshBasicMaterial({
+        color: 0x8b5cf6,
+        transparent: true,
+        opacity: 0.08,
+        blending: THREE.AdditiveBlending,
+        side: THREE.BackSide
+      })
+    );
+    root.add(glow);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.25);
+    keyLight.position.set(4, 3, 5);
+    scene.add(keyLight);
+    const rimLight = new THREE.DirectionalLight(0x38bdf8, 1.6);
+    rimLight.position.set(-4, 1, -3);
+    scene.add(rimLight);
+
+    const stars = makeStars();
+    scene.add(stars);
+
+    const graticule = new THREE.Group();
+    root.add(graticule);
+    addGraticule();
+
+    const globalNetworkLayer = new THREE.Group();
+    root.add(globalNetworkLayer);
+    const networkLayer = new THREE.Group();
+    root.add(networkLayer);
+    const techLayer = new THREE.Group();
+    root.add(techLayer);
+    const scanLayer = new THREE.Group();
+    root.add(scanLayer);
+    addTechOverlays();
+
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    const clock = new THREE.Clock();
+    const target = {
+      camera: camera.position.clone(),
+      controls: controls.target.clone(),
+      rootRotation: root.rotation.clone(),
+      active: false
+    };
+    let selectedKey = null;
+    let pointerDown = { x: 0, y: 0 };
+    let isDragging = false;
+    let lastInteraction = 0;
+    const routeParticles = [];
+    const globalRouteParticles = [];
+    const microNodes = [];
+
+    Object.entries(CONTINENTS).forEach(([key, data]) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.continent = key;
+      button.className = 'continent-pill rounded-full border border-slate-800 bg-slate-950/70 px-3 py-1.5 text-xs font-semibold text-slate-400 hover:border-cyan-400/70 hover:text-white transition';
+      button.textContent = data.name;
+      button.setAttribute('aria-pressed', 'false');
+      button.addEventListener('click', () => focusContinent(key));
+      continentButtons.appendChild(button);
+    });
+
+    renderPanel(null);
+    renderGlobalNetwork();
+
+    resetButton.addEventListener('click', resetGlobe);
+    renderer.domElement.addEventListener('pointerdown', (event) => {
+      pointerDown = { x: event.clientX, y: event.clientY };
+      isDragging = false;
+      lastInteraction = performance.now();
+    });
+    renderer.domElement.addEventListener('pointermove', (event) => {
+      if (Math.abs(event.clientX - pointerDown.x) + Math.abs(event.clientY - pointerDown.y) > 6) {
+        isDragging = true;
+      }
+      lastInteraction = performance.now();
+    });
+    renderer.domElement.addEventListener('pointerup', (event) => {
+      if (isDragging) return;
+      handlePick(event);
+    });
+    renderer.domElement.addEventListener('dblclick', resetGlobe);
+
+    window.addEventListener('resize', resize);
+    resize();
+    animate();
+
+    function latLngToVector3(lat, lng, radius = RADIUS) {
+      const phi = THREE.MathUtils.degToRad(90 - lat);
+      const theta = THREE.MathUtils.degToRad(lng + 180);
+      return new THREE.Vector3(
+        -radius * Math.sin(phi) * Math.cos(theta),
+        radius * Math.cos(phi),
+        radius * Math.sin(phi) * Math.sin(theta)
+      );
     }
 
-    function drawPoly(points) {
-      mctx.beginPath();
-      points.forEach((p, i) => {
-        const [x, y] = lonLatToMaskXY(p[0], p[1]);
-        if (i === 0) mctx.moveTo(x, y);
-        else mctx.lineTo(x, y);
+    function vector3ToLatLng(vector) {
+      const normalized = vector.clone().normalize();
+      const lat = THREE.MathUtils.radToDeg(Math.asin(normalized.y));
+      const lng = THREE.MathUtils.radToDeg(Math.atan2(normalized.z, -normalized.x)) - 180;
+      return { lat, lng: normalizeLng(lng) };
+    }
+
+    function normalizeLng(lng) {
+      let value = lng;
+      while (value < -180) value += 360;
+      while (value > 180) value -= 360;
+      return value;
+    }
+
+    function findContinentByLatLng(lat, lng) {
+      return Object.entries(CONTINENTS).find(([, data]) => data.boxes.some((box) => {
+        const latHit = lat >= box.latMin && lat <= box.latMax;
+        const lngHit = box.lngMin <= box.lngMax
+          ? lng >= box.lngMin && lng <= box.lngMax
+          : lng >= box.lngMin || lng <= box.lngMax;
+        return latHit && lngHit;
+      }))?.[0] || null;
+    }
+
+    function handlePick(event) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const hit = raycaster.intersectObject(earth, false)[0];
+      if (!hit) {
+        if (selectedKey) resetGlobe();
+        return;
+      }
+      const localPoint = earth.worldToLocal(hit.point.clone());
+      const { lat, lng } = vector3ToLatLng(localPoint);
+      const key = findContinentByLatLng(lat, lng);
+      if (key) {
+        focusContinent(key);
+      } else if (selectedKey) {
+        resetGlobe();
+      } else {
+        window.showToast?.('未命中主要大陆区域，请点击陆地区域', 'fa-solid fa-location-crosshairs text-cyan-400');
+      }
+    }
+
+    function focusContinent(key) {
+      const data = CONTINENTS[key];
+      selectedKey = key;
+      clearNetwork();
+      renderNetwork(data);
+      setGlobalNetworkDimmed(true);
+      renderPanel(key);
+      resetButton.classList.remove('hidden');
+
+      const direction = latLngToVector3(data.center.lat, data.center.lng, 1).normalize();
+      const cameraTarget = direction.clone().multiplyScalar(data.distance);
+      cameraTarget.y += 0.35;
+      target.camera.copy(cameraTarget);
+      target.controls.set(0, 0, 0);
+      target.active = true;
+      window.showToast?.(`已放大到${data.name}节点视角`, 'fa-solid fa-magnifying-glass-location text-cyan-400');
+    }
+
+    function resetGlobe() {
+      selectedKey = null;
+      clearNetwork();
+      setGlobalNetworkDimmed(false);
+      renderPanel(null);
+      resetButton.classList.add('hidden');
+      target.camera.set(0, 0.25, 7.2);
+      target.controls.set(0, 0, 0);
+      target.active = true;
+      window.showToast?.('已恢复全球视角', 'fa-solid fa-earth-asia text-cyan-400');
+    }
+
+    function renderPanel(key) {
+      document.querySelectorAll('.continent-pill').forEach((btn) => {
+        btn.setAttribute('aria-pressed', String(btn.dataset.continent === key));
       });
-      mctx.closePath();
-      mctx.fill();
+
+      if (!key) {
+        continentTitle.textContent = '全球网络';
+        continentDesc.textContent = '全球节点矩阵会持续展示跨洲链路、轨道扫描和流动光点。点击大陆后，会放大到对应半球并高亮该区域链路。';
+        continentStatus.textContent = '自动旋转';
+        continentStatus.className = 'rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold text-emerald-300';
+        cityList.innerHTML = '<span class="rounded-full bg-slate-900 px-2.5 py-1 text-slate-400">31 个全球主节点 + 周边微节点已点亮</span>';
+        routeList.innerHTML = '<p><i class="fa-solid fa-route mr-1.5 text-cyan-400"></i>39 条跨洲链路正在传输数据流</p>';
+        return;
+      }
+
+      const data = CONTINENTS[key];
+      continentTitle.textContent = data.name;
+      continentDesc.textContent = data.desc;
+      continentStatus.textContent = '半球放大';
+      continentStatus.className = 'rounded-full border border-cyan-500/20 bg-cyan-500/10 px-2.5 py-1 text-[10px] font-bold text-cyan-300';
+      cityList.innerHTML = data.cities.map((city) => (
+        `<span class="rounded-full border border-slate-700 bg-slate-900/80 px-2.5 py-1">${city.name}</span>`
+      )).join('');
+      routeList.innerHTML = data.routes.map((route) => (
+        `<p><i class="fa-solid fa-route mr-1.5 text-cyan-400"></i>${route[0]} <span class="text-slate-600">→</span> ${route[1]}</p>`
+      )).join('');
     }
 
-    mctx.fillStyle = '#000';
-    mctx.fillRect(0, 0, 360, 180);
-    mctx.fillStyle = '#fff';
-
-    // 简化世界大陆轮廓
-    drawPoly([[-168, 64], [-150, 70], [-120, 75], [-90, 78], [-62, 58], [-70, 44], [-85, 30], [-105, 18], [-118, 25], [-125, 36], [-140, 55], [-168, 64]]); // 北美
-    drawPoly([[-80, 10], [-70, 12], [-50, -5], [-42, -14], [-40, -30], [-58, -50], [-73, -55], [-77, -47], [-74, -30], [-80, -10], [-80, 10]]); // 南美
-    drawPoly([[-73, 60], [-50, 83], [-20, 80], [-35, 60], [-50, 58], [-73, 60]]); // 格陵兰
-    drawPoly([[-17, 32], [0, 38], [14, 36], [25, 33], [32, 30], [38, 24], [44, 10], [40, -5], [34, -20], [25, -34], [10, -34], [0, -20], [-12, -12], [-17, 0], [-17, 18], [-17, 32]]); // 非洲
-    drawPoly([[-10, 36], [8, 42], [20, 52], [32, 60], [52, 67], [78, 75], [104, 76], [128, 74], [150, 70], [168, 62], [180, 60], [180, 44], [166, 30], [146, 18], [126, 10], [110, 12], [96, 22], [82, 18], [72, 28], [58, 25], [48, 12], [34, 25], [20, 34], [8, 38], [-10, 36]]); // 欧亚
-    drawPoly([[-9, 50], [-1, 50], [-1, 58], [-8, 58], [-9, 50]]); // 英国
-    drawPoly([[-25, 63], [-12, 63], [-10, 67], [-25, 66], [-25, 63]]); // 冰岛
-    drawPoly([[67, 22], [76, 8], [86, 20], [92, 23], [102, 15], [106, 6], [111, 15], [105, 24], [90, 26], [80, 28], [67, 22]]); // 印度/东南亚
-    drawPoly([[129, 31], [138, 35], [144, 44], [140, 46], [132, 40], [129, 31]]); // 日本
-    drawPoly([[113, -22], [118, -14], [136, -12], [145, -18], [153, -28], [149, -38], [132, -38], [115, -34], [113, -22]]); // 澳大利亚
-    drawPoly([[165, -45], [176, -37], [178, -41], [170, -48], [165, -45]]); // 新西兰
-    drawPoly([[45, -25], [49, -15], [49, -24], [45, -25]]); // 马达加斯加
-
-    const mapData = mctx.getImageData(0, 0, 360, 180).data;
-
-    function isLand(lon, lat) {
-      const x = Math.min(359, Math.max(0, Math.floor(lon + 180)));
-      const y = Math.min(179, Math.max(0, Math.floor(90 - lat)));
-      const idx = (y * 360 + x) * 4;
-      return mapData[idx] > 120;
+    function clearNetwork() {
+      while (networkLayer.children.length) {
+        const child = networkLayer.children.pop();
+        child.traverse?.((obj) => {
+          obj.geometry?.dispose?.();
+          if (Array.isArray(obj.material)) obj.material.forEach((mat) => mat.dispose?.());
+          else obj.material?.dispose?.();
+        });
+      }
+      routeParticles.length = 0;
     }
 
-    const canvas = globeCanvas;
-    const ctx = gctx;
-    const W = canvas.width;
-    const H = canvas.height;
-    const CX = W / 2;
-    const CY = H / 2;
+    function renderGlobalNetwork() {
+      clearLayer(globalNetworkLayer);
+      globalRouteParticles.length = 0;
 
-    let globeRadius = 228;
-    let targetRadius = 228;
-    let cameraDistance = 900;
-    let targetCameraDistance = 900;
-    let isZoomed = false;
+      const globalCities = [
+        { name: '北京', lat: 39.9042, lng: 116.4074 },
+        { name: '上海', lat: 31.2304, lng: 121.4737 },
+        { name: '深圳', lat: 22.5431, lng: 114.0579 },
+        { name: '香港', lat: 22.3193, lng: 114.1694 },
+        { name: '首尔', lat: 37.5665, lng: 126.9780 },
+        { name: '东京', lat: 35.6762, lng: 139.6503 },
+        { name: '大阪', lat: 34.6937, lng: 135.5023 },
+        { name: '新加坡', lat: 1.3521, lng: 103.8198 },
+        { name: '孟买', lat: 19.0760, lng: 72.8777 },
+        { name: '迪拜', lat: 25.2048, lng: 55.2708 },
+        { name: '悉尼', lat: -33.8688, lng: 151.2093 },
+        { name: '奥克兰', lat: -36.8509, lng: 174.7645 },
+        { name: '旧金山', lat: 37.7749, lng: -122.4194 },
+        { name: '洛杉矶', lat: 34.0522, lng: -118.2437 },
+        { name: '西雅图', lat: 47.6062, lng: -122.3321 },
+        { name: '芝加哥', lat: 41.8781, lng: -87.6298 },
+        { name: '纽约', lat: 40.7128, lng: -74.0060 },
+        { name: '多伦多', lat: 43.6532, lng: -79.3832 },
+        { name: '墨西哥城', lat: 19.4326, lng: -99.1332 },
+        { name: '圣保罗', lat: -23.5505, lng: -46.6333 },
+        { name: '布宜诺斯艾利斯', lat: -34.6037, lng: -58.3816 },
+        { name: '伦敦', lat: 51.5072, lng: -0.1276 },
+        { name: '巴黎', lat: 48.8566, lng: 2.3522 },
+        { name: '法兰克福', lat: 50.1109, lng: 8.6821 },
+        { name: '阿姆斯特丹', lat: 52.3676, lng: 4.9041 },
+        { name: '斯德哥尔摩', lat: 59.3293, lng: 18.0686 },
+        { name: '马德里', lat: 40.4168, lng: -3.7038 },
+        { name: '开罗', lat: 30.0444, lng: 31.2357 },
+        { name: '拉各斯', lat: 6.5244, lng: 3.3792 },
+        { name: '内罗毕', lat: -1.2921, lng: 36.8219 },
+        { name: '约翰内斯堡', lat: -26.2041, lng: 28.0473 }
+      ];
+      const globalRoutes = [
+        ['北京', '上海'], ['上海', '深圳'], ['深圳', '香港'], ['北京', '首尔'], ['首尔', '东京'],
+        ['东京', '大阪'], ['香港', '新加坡'], ['新加坡', '孟买'], ['孟买', '迪拜'], ['迪拜', '法兰克福'],
+        ['新加坡', '悉尼'], ['悉尼', '奥克兰'], ['东京', '旧金山'], ['东京', '西雅图'],
+        ['旧金山', '洛杉矶'], ['旧金山', '芝加哥'], ['西雅图', '纽约'], ['芝加哥', '纽约'],
+        ['纽约', '多伦多'], ['洛杉矶', '墨西哥城'], ['纽约', '伦敦'], ['多伦多', '伦敦'],
+        ['伦敦', '巴黎'], ['巴黎', '法兰克福'], ['法兰克福', '阿姆斯特丹'], ['阿姆斯特丹', '斯德哥尔摩'],
+        ['巴黎', '马德里'], ['马德里', '开罗'], ['伦敦', '开罗'], ['开罗', '拉各斯'],
+        ['开罗', '内罗毕'], ['内罗毕', '约翰内斯堡'], ['拉各斯', '圣保罗'], ['纽约', '圣保罗'],
+        ['圣保罗', '布宜诺斯艾利斯'], ['布宜诺斯艾利斯', '约翰内斯堡'], ['迪拜', '内罗毕'],
+        ['法兰克福', '北京'], ['新加坡', '旧金山']
+      ];
 
-    const points = [];
-    const numPoints = 2600;
-    const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+      const cityMap = new Map();
+      globalCities.forEach((city) => {
+        const position = latLngToVector3(city.lat, city.lng, RADIUS * 1.022);
+        cityMap.set(city.name, { ...city, position });
+        globalNetworkLayer.add(createCityMarker(position, {
+          halo: 0x38bdf8,
+          core: 0xffffff,
+          haloOpacity: 0.42,
+          scale: 0.72
+        }));
+      });
 
-    for (let i = 0; i < numPoints; i++) {
-      const y = 1 - (i / (numPoints - 1)) * 2;
-      const radiusAtY = Math.sqrt(1 - y * y);
-      const theta = goldenAngle * i;
-      const x = Math.cos(theta) * radiusAtY;
-      const z = Math.sin(theta) * radiusAtY;
+      globalRoutes.forEach((route, index) => {
+        const from = cityMap.get(route[0]);
+        const to = cityMap.get(route[1]);
+        if (!from || !to) return;
+        const color = index % 3 === 0 ? 0x22d3ee : index % 3 === 1 ? 0x8b5cf6 : 0x14b8a6;
+        createRouteVisual(globalNetworkLayer, globalRouteParticles, from.position, to.position, {
+          color,
+          opacity: 0.42,
+          tubeRadius: 0.0045,
+          particleSize: 0.018,
+          particleCount: index % 4 === 0 ? 3 : 2,
+          speed: 0.085 + Math.random() * 0.065
+        });
+      });
+      addMicroNodes(globalCities);
+    }
 
-      const lat = Math.asin(y) * (180 / Math.PI);
-      const lon = Math.atan2(z, x) * (180 / Math.PI);
-
-      points.push({
-        x, y, z,
-        type: isLand(lon, lat) ? 'land' : 'ocean'
+    function setGlobalNetworkDimmed(dimmed) {
+      globalNetworkLayer.traverse((obj) => {
+        if (obj.material) {
+          obj.material.opacity = obj.userData.baseOpacity * (dimmed ? 0.34 : 1);
+        }
       });
     }
 
-    const hubNodes = [];
-    for (let i = 0; i < 14; i++) {
-      const u = Math.random() * 2 - 1;
-      const a = Math.random() * Math.PI * 2;
-      const s = Math.sqrt(1 - u * u);
-      const x = s * Math.cos(a);
-      const y = u;
-      const z = s * Math.sin(a);
-      const hub = { x, y, z, type: 'hub', pulse: Math.random() * Math.PI };
-      points.push(hub);
-      hubNodes.push(hub);
-    }
+    function renderNetwork(data) {
+      const cityMap = new Map();
+      data.cities.forEach((city) => {
+        const position = latLngToVector3(city.lat, city.lng, RADIUS * 1.018);
+        cityMap.set(city.name, { ...city, position });
 
-    const connections = [];
-    for (let i = 0; i < 9; i++) {
-      const a = hubNodes[Math.floor(Math.random() * hubNodes.length)];
-      let b = hubNodes[Math.floor(Math.random() * hubNodes.length)];
-      while (b === a) b = hubNodes[Math.floor(Math.random() * hubNodes.length)];
-      connections.push({
-        from: a,
-        to: b,
-        progress: Math.random(),
-        speed: 0.0035 + Math.random() * 0.005,
-        color: Math.random() > 0.5 ? '#8b5cf6' : '#22d3ee'
+        networkLayer.add(createCityMarker(position, {
+          halo: 0x22d3ee,
+          core: 0xffffff,
+          haloOpacity: 0.8,
+          scale: 1.22
+        }));
+      });
+
+      data.routes.forEach((route, index) => {
+        const from = cityMap.get(route[0]);
+        const to = cityMap.get(route[1]);
+        if (!from || !to) return;
+        createRouteVisual(networkLayer, routeParticles, from.position, to.position, {
+          color: index % 2 ? 0x8b5cf6 : 0x22d3ee,
+          opacity: 0.86,
+          tubeRadius: 0.01,
+          particleSize: 0.034,
+          speed: 0.13 + Math.random() * 0.07
+        });
       });
     }
 
-    const stars = [];
-    for (let i = 0; i < 180; i++) {
-      stars.push({
-        x: (Math.random() - 0.5) * 1400,
-        y: (Math.random() - 0.5) * 1400,
-        z: Math.random() * 1000 + 20,
-        size: Math.random() * 1.3 + 0.5
-      });
+    function createCityMarker(position, options) {
+      const marker = new THREE.Group();
+      marker.position.copy(position);
+      marker.lookAt(position.clone().multiplyScalar(2));
+
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(0.07 * options.scale, 0.006 * options.scale, 8, 32),
+        makeBasicMaterial(options.halo, options.haloOpacity * 0.55)
+      );
+      const halo = new THREE.Mesh(
+        new THREE.SphereGeometry(0.055 * options.scale, 20, 20),
+        makeBasicMaterial(options.halo, options.haloOpacity)
+      );
+      const core = new THREE.Mesh(
+        new THREE.SphereGeometry(0.024 * options.scale, 16, 16),
+        makeBasicMaterial(options.core, 1)
+      );
+      marker.add(ring, halo, core);
+      return marker;
     }
 
-    let ripples = [];
-    let clickParticles = [];
+    function createRouteVisual(layer, particleStore, from, to, options) {
+      const curve = makeArcCurve(from, to);
+      const points = curve.getPoints(96);
+      const glow = new THREE.Mesh(
+        new THREE.TubeGeometry(curve, 96, options.tubeRadius * 2.8, 8, false),
+        makeBasicMaterial(options.color, options.opacity * 0.18)
+      );
+      const core = new THREE.Mesh(
+        new THREE.TubeGeometry(curve, 96, options.tubeRadius, 8, false),
+        makeBasicMaterial(options.color, options.opacity)
+      );
+      const guide = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(points),
+        makeLineMaterial(options.color, Math.min(1, options.opacity + 0.1))
+      );
+      layer.add(glow, core, guide);
 
-    function addRipple(x, y) {
-      ripples.push({ x, y, r: 0, opacity: 1 });
-    }
-
-    function spawnClickParticles(cx, cy) {
-      for (let i = 0; i < 48; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = 3 + Math.random() * 8;
-        clickParticles.push({
-          x: cx,
-          y: cy,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
-          alpha: 1,
-          size: Math.random() * 3.2 + 1.2,
-          color: Math.random() > 0.5 ? '#8b5cf6' : '#22d3ee'
+      const particleCount = options.particleCount || 2;
+      for (let i = 0; i < particleCount; i++) {
+        const particle = new THREE.Mesh(
+          new THREE.SphereGeometry(options.particleSize, 12, 12),
+          makeBasicMaterial(0xffffff, 0.92)
+        );
+        layer.add(particle);
+        particleStore.push({
+          mesh: particle,
+          curve,
+          progress: (Math.random() + i / particleCount) % 1,
+          speed: options.speed
         });
       }
     }
 
-    let angleX = -0.22;
-    let angleY = 0;
-    let isDragging = false;
-    let dragMoved = false;
-    let startX = 0;
-    let startY = 0;
-    let lastX = 0;
-    let lastY = 0;
-    let velocityX = 0;
-    let velocityY = 0;
-    const autoRotationSpeed = 0.0032;
-
-    canvas.addEventListener('pointerdown', (e) => {
-      isDragging = true;
-      dragMoved = false;
-      startX = e.clientX;
-      startY = e.clientY;
-      lastX = e.clientX;
-      lastY = e.clientY;
-      canvas.setPointerCapture(e.pointerId);
-    });
-
-    canvas.addEventListener('pointermove', (e) => {
-      if (!isDragging) return;
-      const dx = e.clientX - lastX;
-      const dy = e.clientY - lastY;
-
-      if (Math.abs(e.clientX - startX) + Math.abs(e.clientY - startY) > 5) {
-        dragMoved = true;
-      }
-
-      angleY += dx * 0.005;
-      angleX += dy * 0.005;
-
-      velocityX = dx * 0.0024;
-      velocityY = dy * 0.0024;
-
-      lastX = e.clientX;
-      lastY = e.clientY;
-    });
-
-    canvas.addEventListener('pointerup', (e) => {
-      if (!isDragging) return;
-      isDragging = false;
-      canvas.releasePointerCapture(e.pointerId);
-
-      if (!dragMoved) {
-        isZoomed = !isZoomed;
-        targetRadius = isZoomed ? 360 : 228;
-        targetCameraDistance = isZoomed ? 760 : 900;
-
-        const rect = canvas.getBoundingClientRect();
-        const clickX = (e.clientX - rect.left) * (W / rect.width);
-        const clickY = (e.clientY - rect.top) * (H / rect.height);
-        addRipple(clickX, clickY);
-        spawnClickParticles(clickX, clickY);
-
-        showToast(isZoomed ? "已放大地球视角" : "已恢复原视角", "fa-solid fa-maximize text-cyan-400");
-      }
-    });
-
-    canvas.addEventListener('pointercancel', () => {
-      isDragging = false;
-    });
-
-    function projectPoint(p) {
-      const cosY = Math.cos(angleY);
-      const sinY = Math.sin(angleY);
-      const x1 = p.x * globeRadius * cosY - p.z * globeRadius * sinY;
-      const z1 = p.x * globeRadius * sinY + p.z * globeRadius * cosY;
-
-      const cosX = Math.cos(angleX);
-      const sinX = Math.sin(angleX);
-      const y2 = p.y * globeRadius * cosX - z1 * sinX;
-      const z2 = p.y * globeRadius * sinX + z1 * cosX;
-
-      const scale = cameraDistance / (cameraDistance - z2);
-      return {
-        x: CX + x1 * scale,
-        y: CY + y2 * scale,
-        z: z2,
-        scale,
-        origin: p,
-        type: p.type
-      };
-    }
-
-    function drawGlobe() {
-      ctx.clearRect(0, 0, W, H);
-
-      ctx.save();
-      const bg = ctx.createRadialGradient(CX, CY, 20, CX, CY, 360);
-      bg.addColorStop(0, 'rgba(15, 23, 42, 0.2)');
-      bg.addColorStop(0.55, 'rgba(15, 23, 42, 0.05)');
-      bg.addColorStop(1, 'rgba(15, 23, 42, 0)');
-      ctx.fillStyle = bg;
-      ctx.beginPath();
-      ctx.arc(CX, CY, 320, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-
-      if (!isDragging) {
-        angleY += autoRotationSpeed + velocityX;
-        angleX += velocityY;
-        velocityX *= 0.95;
-        velocityY *= 0.95;
-      }
-
-      angleX = Math.max(-Math.PI / 3.15, Math.min(Math.PI / 3.15, angleX));
-      globeRadius += (targetRadius - globeRadius) * 0.12;
-      cameraDistance += (targetCameraDistance - cameraDistance) * 0.12;
-
-      // stars
-      stars.forEach((star) => {
-        if (isZoomed) {
-          star.z -= 14;
-          if (star.z <= 10) star.z = 1000;
-
-          const prevZ = star.z + 18;
-          const scalePrev = 800 / prevZ;
-          const scaleCurr = 800 / star.z;
-          const px = CX + star.x * scalePrev;
-          const py = CY + star.y * scalePrev;
-          const cx = CX + star.x * scaleCurr;
-          const cy = CY + star.y * scaleCurr;
-
-          ctx.beginPath();
-          ctx.moveTo(px, py);
-          ctx.lineTo(cx, cy);
-          ctx.strokeStyle = `rgba(139, 92, 246, ${0.05 + (1 - star.z / 1000) * 0.55})`;
-          ctx.lineWidth = star.size * 1.3;
-          ctx.stroke();
-        } else {
-          star.z -= 0.7;
-          if (star.z <= 10) star.z = 1000;
-
-          const scaleCurr = 800 / star.z;
-          const sx = CX + star.x * scaleCurr;
-          const sy = CY + star.y * scaleCurr;
-
-          ctx.beginPath();
-          ctx.arc(sx, sy, star.size, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(255,255,255,${0.06 + (1 - star.z / 1000) * 0.28})`;
-          ctx.fill();
+    function addMicroNodes(seedCities) {
+      microNodes.length = 0;
+      const seedPositions = seedCities.map((city) => latLngToVector3(city.lat, city.lng, RADIUS * 1.012));
+      seedPositions.forEach((position, index) => {
+        for (let i = 0; i < 3; i++) {
+          const jitter = new THREE.Vector3(
+            (Math.random() - 0.5) * 0.18,
+            (Math.random() - 0.5) * 0.18,
+            (Math.random() - 0.5) * 0.18
+          );
+          const nodePosition = position.clone().add(jitter).normalize().multiplyScalar(RADIUS * 1.015);
+          const node = new THREE.Mesh(
+            new THREE.SphereGeometry(0.008 + Math.random() * 0.01, 8, 8),
+            makeBasicMaterial(index % 2 ? 0x8b5cf6 : 0x22d3ee, 0.38 + Math.random() * 0.38)
+          );
+          node.position.copy(nodePosition);
+          node.userData.phase = Math.random() * Math.PI * 2;
+          node.userData.baseScale = 0.8 + Math.random() * 1.5;
+          globalNetworkLayer.add(node);
+          microNodes.push(node);
         }
       });
+    }
 
-      const projectedPoints = points.map(projectPoint);
-      projectedPoints.sort((a, b) => a.z - b.z);
+    function addTechOverlays() {
+      const orbitMaterial = makeLineMaterial(0x22d3ee, 0.28);
+      const orbitMaterialViolet = makeLineMaterial(0x8b5cf6, 0.22);
+      const rings = [
+        { radius: RADIUS * 1.34, tiltX: 0.72, tiltY: 0.18, material: orbitMaterial },
+        { radius: RADIUS * 1.46, tiltX: -0.48, tiltY: 0.62, material: orbitMaterialViolet },
+        { radius: RADIUS * 1.58, tiltX: 1.18, tiltY: -0.32, material: orbitMaterial }
+      ];
 
-      // globe ring
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(CX, CY, globeRadius * 1.02, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(139, 92, 246, 0.14)';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.restore();
+      rings.forEach((ring) => {
+        const curve = new THREE.EllipseCurve(0, 0, ring.radius, ring.radius * 0.42, 0, Math.PI * 2, false, 0);
+        const points = curve.getPoints(180).map((p) => new THREE.Vector3(p.x, p.y, 0));
+        const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), ring.material);
+        line.rotation.x = ring.tiltX;
+        line.rotation.y = ring.tiltY;
+        line.userData.spin = 0.05 + Math.random() * 0.04;
+        techLayer.add(line);
+      });
 
-      // connections
-      connections.forEach((conn) => {
-        const fromProj = projectedPoints.find(p => p.origin === conn.from);
-        const toProj = projectedPoints.find(p => p.origin === conn.to);
-        if (!fromProj || !toProj) return;
+      for (let i = 0; i < 3; i++) {
+        const scan = new THREE.Mesh(
+          new THREE.TorusGeometry(RADIUS * (1.04 + i * 0.035), 0.004, 8, 160),
+          makeBasicMaterial(i % 2 ? 0x8b5cf6 : 0x22d3ee, 0.14)
+        );
+        scan.rotation.x = Math.PI / 2 + i * 0.18;
+        scan.userData.phase = i * 1.8;
+        scanLayer.add(scan);
+      }
+    }
 
-        const front = fromProj.z > -100 || toProj.z > -100;
-        const midX = (fromProj.x + toProj.x) / 2;
-        const midY = (fromProj.y + toProj.y) / 2;
-        const dx = toProj.x - fromProj.x;
-        const dy = toProj.y - fromProj.y;
-        const dist = Math.max(1, Math.sqrt(dx * dx + dy * dy));
-        const nx = -dy / dist;
-        const ny = dx / dist;
-        const arcHeight = dist * 0.22;
-        const cx = midX + nx * arcHeight;
-        const cy = midY + ny * arcHeight;
+    function makeBasicMaterial(color, opacity) {
+      const material = new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      material.userData.baseOpacity = opacity;
+      return material;
+    }
 
+    function makeLineMaterial(color, opacity) {
+      const material = new THREE.LineBasicMaterial({
+        color,
+        transparent: true,
+        opacity,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      material.userData.baseOpacity = opacity;
+      return material;
+    }
+
+    function clearLayer(layer) {
+      while (layer.children.length) {
+        const child = layer.children.pop();
+        child.traverse?.((obj) => {
+          obj.geometry?.dispose?.();
+          if (Array.isArray(obj.material)) obj.material.forEach((mat) => mat.dispose?.());
+          else obj.material?.dispose?.();
+        });
+      }
+    }
+
+    function makeArcCurve(from, to) {
+      const midpoint = from.clone().add(to).multiplyScalar(0.5).normalize();
+      const distance = from.distanceTo(to);
+      const altitude = RADIUS + Math.min(1.15, 0.28 + distance * 0.24);
+      const control = midpoint.multiplyScalar(altitude);
+      return new THREE.QuadraticBezierCurve3(from, control, to);
+    }
+
+    function makeStars() {
+      const geometry = new THREE.BufferGeometry();
+      const positions = [];
+      for (let i = 0; i < 900; i++) {
+        const r = 16 + Math.random() * 24;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        positions.push(
+          r * Math.sin(phi) * Math.cos(theta),
+          r * Math.cos(phi),
+          r * Math.sin(phi) * Math.sin(theta)
+        );
+      }
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      return new THREE.Points(
+        geometry,
+        new THREE.PointsMaterial({ color: 0xffffff, size: 0.035, transparent: true, opacity: 0.42 })
+      );
+    }
+
+    function addGraticule() {
+      const material = new THREE.LineBasicMaterial({ color: 0x67e8f9, transparent: true, opacity: 0.11 });
+      for (let lat = -60; lat <= 60; lat += 30) {
+        const points = [];
+        for (let lng = -180; lng <= 180; lng += 4) points.push(latLngToVector3(lat, lng, RADIUS * 1.006));
+        graticule.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), material));
+      }
+      for (let lng = -150; lng <= 180; lng += 30) {
+        const points = [];
+        for (let lat = -80; lat <= 80; lat += 4) points.push(latLngToVector3(lat, lng, RADIUS * 1.006));
+        graticule.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), material));
+      }
+    }
+
+    function buildProceduralEarth() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+      const ocean = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      ocean.addColorStop(0, '#0f3b73');
+      ocean.addColorStop(0.45, '#082f58');
+      ocean.addColorStop(1, '#03182f');
+      ctx.fillStyle = ocean;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'rgba(86, 167, 118, 0.88)';
+      const polys = [
+        [[-168,64],[-150,70],[-120,75],[-90,78],[-62,58],[-70,44],[-85,30],[-105,18],[-118,25],[-125,36],[-140,55]],
+        [[-80,10],[-70,12],[-50,-5],[-42,-14],[-40,-30],[-58,-50],[-73,-55],[-77,-47],[-74,-30],[-80,-10]],
+        [[-17,32],[0,38],[14,36],[25,33],[38,24],[44,10],[40,-5],[34,-20],[25,-34],[10,-34],[0,-20],[-12,-12],[-17,0]],
+        [[-10,36],[8,42],[20,52],[52,67],[78,75],[104,76],[128,74],[150,70],[180,60],[166,30],[146,18],[126,10],[110,12],[96,22],[82,18],[72,28],[58,25],[48,12],[34,25],[20,34]],
+        [[67,22],[76,8],[86,20],[92,23],[102,15],[106,6],[111,15],[105,24],[90,26],[80,28]],
+        [[113,-22],[118,-14],[136,-12],[145,-18],[153,-28],[149,-38],[132,-38],[115,-34]],
+        [[165,-45],[176,-37],[178,-41],[170,-48]]
+      ];
+      polys.forEach((poly) => {
         ctx.beginPath();
-        ctx.moveTo(fromProj.x, fromProj.y);
-        ctx.quadraticCurveTo(cx, cy, toProj.x, toProj.y);
-
-        const gradient = ctx.createLinearGradient(fromProj.x, fromProj.y, toProj.x, toProj.y);
-        const opacity = front ? 0.32 : 0.07;
-        gradient.addColorStop(0, `rgba(139, 92, 246, ${opacity})`);
-        gradient.addColorStop(1, `rgba(34, 211, 238, ${opacity})`);
-        ctx.strokeStyle = gradient;
-        ctx.lineWidth = front ? 1.4 : 0.8;
-        ctx.stroke();
-
-        conn.progress += conn.speed;
-        if (conn.progress > 1) {
-          conn.progress = 0;
-          if (Math.random() > 0.5) {
-            conn.to = hubNodes[Math.floor(Math.random() * hubNodes.length)];
-            while (conn.to === conn.from) {
-              conn.to = hubNodes[Math.floor(Math.random() * hubNodes.length)];
-            }
-          }
-        }
-
-        if (front) {
-          const t = conn.progress;
-          const px = (1 - t) * (1 - t) * fromProj.x + 2 * (1 - t) * t * cx + t * t * toProj.x;
-          const py = (1 - t) * (1 - t) * fromProj.y + 2 * (1 - t) * t * cy + t * t * toProj.y;
-
-          ctx.beginPath();
-          ctx.arc(px, py, 3, 0, Math.PI * 2);
-          ctx.fillStyle = conn.color;
-          ctx.shadowColor = conn.color;
-          ctx.shadowBlur = 10;
-          ctx.fill();
-          ctx.shadowBlur = 0;
-        }
+        poly.forEach(([lng, lat], index) => {
+          const x = ((lng + 180) / 360) * canvas.width;
+          const y = ((90 - lat) / 180) * canvas.height;
+          if (index === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.closePath();
+        ctx.fill();
       });
-
-      // points
-      projectedPoints.forEach((p) => {
-        const zNorm = (p.z + globeRadius) / (2 * globeRadius);
-        const alpha = 0.05 + zNorm * 0.82;
-
-        if (p.type === 'land') {
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, 1.85 * p.scale, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(167, 139, 250, ${alpha})`;
-          ctx.shadowColor = 'rgba(34, 211, 238, 0.65)';
-          ctx.shadowBlur = 6;
-          ctx.fill();
-          ctx.shadowBlur = 0;
-        } else if (p.type === 'ocean') {
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, 0.92 * p.scale, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(51, 65, 85, ${alpha * 0.16})`;
-          ctx.fill();
-        } else if (p.type === 'hub') {
-          p.origin.pulse += 0.045;
-          const pulseRadius = 3 + Math.sin(p.origin.pulse) * 1.5;
-
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, (pulseRadius + 3) * p.scale, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(34, 211, 238, ${alpha * 0.28})`;
-          ctx.fill();
-
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, 2.6 * p.scale, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-          ctx.fill();
-        }
-      });
-
-      // ripples
-      for (let i = ripples.length - 1; i >= 0; i--) {
-        const r = ripples[i];
-        r.r += 6.5;
-        r.opacity -= 0.025;
-        if (r.opacity <= 0) {
-          ripples.splice(i, 1);
-        } else {
-          ctx.beginPath();
-          ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2);
-          ctx.strokeStyle = `rgba(34, 211, 238, ${r.opacity})`;
-          ctx.lineWidth = 4;
-          ctx.stroke();
-        }
-      }
-
-      // click particles
-      for (let i = clickParticles.length - 1; i >= 0; i--) {
-        const p = clickParticles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += 0.055;
-        p.alpha -= 0.024;
-        if (p.alpha <= 0) {
-          clickParticles.splice(i, 1);
-        } else {
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.fillStyle = p.color;
-          ctx.globalAlpha = p.alpha;
-          ctx.fill();
-          ctx.globalAlpha = 1;
-        }
-      }
-
-      requestAnimationFrame(drawGlobe);
+      const fallbackTexture = new THREE.CanvasTexture(canvas);
+      fallbackTexture.colorSpace = THREE.SRGBColorSpace;
+      earth.material.map = fallbackTexture;
+      earth.material.needsUpdate = true;
     }
 
-    drawGlobe();
+    function resize() {
+      const width = stage.clientWidth;
+      const height = stage.clientHeight;
+      renderer.setSize(width, height, false);
+      camera.aspect = width / Math.max(1, height);
+      camera.updateProjectionMatrix();
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      const idle = performance.now() - lastInteraction > 1200;
+      if (!selectedKey && idle) root.rotation.y += delta * 0.16;
+      atmosphere.rotation.y -= delta * 0.08;
+      glow.rotation.y += delta * 0.05;
+      stars.rotation.y += delta * 0.006;
+      techLayer.children.forEach((ring, index) => {
+        ring.rotation.z += delta * ring.userData.spin * (index % 2 ? -1 : 1);
+      });
+      scanLayer.children.forEach((scan, index) => {
+        scan.rotation.z += delta * (0.18 + index * 0.06);
+        const pulse = 1 + Math.sin(performance.now() * 0.0018 + scan.userData.phase) * 0.035;
+        scan.scale.setScalar(pulse);
+        scan.material.opacity = scan.material.userData.baseOpacity * (0.7 + Math.sin(performance.now() * 0.002 + scan.userData.phase) * 0.3);
+      });
+
+      if (target.active) {
+        camera.position.lerp(target.camera, 0.075);
+        controls.target.lerp(target.controls, 0.075);
+        if (camera.position.distanceTo(target.camera) < 0.02) target.active = false;
+      }
+
+      routeParticles.forEach((particle) => {
+        particle.progress = (particle.progress + particle.speed * delta) % 1;
+        particle.mesh.position.copy(particle.curve.getPointAt(particle.progress));
+      });
+      globalRouteParticles.forEach((particle) => {
+        particle.progress = (particle.progress + particle.speed * delta) % 1;
+        particle.mesh.position.copy(particle.curve.getPointAt(particle.progress));
+      });
+
+      [...globalNetworkLayer.children, ...networkLayer.children].forEach((child) => {
+        if (child.type === 'Group') {
+          const pulse = 1 + Math.sin(performance.now() * 0.004) * 0.16;
+          child.scale.setScalar(pulse);
+        }
+      });
+      microNodes.forEach((node) => {
+        const pulse = 0.65 + Math.sin(performance.now() * 0.0035 + node.userData.phase) * 0.35;
+        node.scale.setScalar(node.userData.baseScale * (0.75 + pulse));
+        node.material.opacity = node.material.userData.baseOpacity * (0.45 + pulse * 0.65);
+      });
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
   </script>
 </body>
 </html>
